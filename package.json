@@ -1,0 +1,24 @@
+{
+  "name": "@bootloader/config",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bootloader/bootjs-config.git"
+  },
+  "author": "lnt",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bootloader/bootjs-config/issues"
+  },
+  "homepage": "https://github.com/bootloader/bootjs-config#readme",
+  "dependencies": {
+    "config": "^3.3.7",
+    "dotenv": "^16.3.1",
+    "properties": "^1.2.1"
+  }
+}
