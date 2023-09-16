@@ -1,6 +1,8 @@
 require('dotenv').config();
 const config = require('config');
 
+let LOCAL_STORE = {};
+
 module.exports = {
     get(key){
         let dotkey = key.replace(/\_/g,".").toLowerCase();
@@ -28,5 +30,9 @@ module.exports = {
         } else if(key2){
             return this.get(key2);
         }
+    },
+    store(name){
+        LOCAL_STORE[name] = LOCAL_STORE[name] || {};
+        return LOCAL_STORE[name];
     }
 }
