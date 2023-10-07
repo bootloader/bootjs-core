@@ -1,5 +1,7 @@
 require('dotenv').config();
 const config = require('config');
+var prompt = require('prompt');
+const fs = require('fs')
 
 let LOCAL_STORE = {};
 
@@ -34,5 +36,37 @@ module.exports = {
     store(name){
         LOCAL_STORE[name] = LOCAL_STORE[name] || {};
         return LOCAL_STORE[name];
+    },
+    async manifest({ group,props}){
+        return new Promise((resolve,reject)=>{
+            prompt.start();
+            let _props = {};
+            props.map((key)=>{
+                let _KEY = key.replace(/\./g,"_").toUpperCase();
+                let value = this.getIfPresent(key);
+                if(value == null || value === ''){
+                    _props[_KEY] = { key,_KEY};
+                    return _props[_KEY];
+                }
+            });
+            prompt.get(Object.keys(_props), function (err, result){
+                let writer = fs.createWriteStream("./config/local.properties",{
+                    flags : 'as'
+                });
+                writer.write(`\n####### ${group || new Date().toDateString()} ##############`);
+                let values = {};
+                for(let _KEY in _props){
+                    let key = _props[_KEY].key;
+                    let value = result[_props[_KEY]._KEY];
+                    if(value === undefined){
+                        value = ' ?????????'
+                    }
+                    writer.write(`\n${key}=${value}`);
+                    values[key] = value;
+                }
+                writer.end();
+                resolve({values : values})
+            });
+        });
     }
 }
