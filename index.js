@@ -39,34 +39,42 @@ module.exports = {
     },
     async manifest({ group,props}){
         return new Promise((resolve,reject)=>{
-            prompt.start();
             let _props = {};
+            let _values = {};
             props.map((key)=>{
                 let _KEY = key.replace(/\./g,"_").toUpperCase();
                 let value = this.getIfPresent(key);
                 if(value == null || value === ''){
                     _props[_KEY] = { key,_KEY};
                     return _props[_KEY];
+                } else {
+                    _values[key] = value;
                 }
             });
-            prompt.get(Object.keys(_props), function (err, result){
-                let writer = fs.createWriteStream("./config/local.properties",{
-                    flags : 'as'
-                });
-                writer.write(`\n####### ${group || new Date().toDateString()} ##############`);
-                let values = {};
-                for(let _KEY in _props){
-                    let key = _props[_KEY].key;
-                    let value = result[_props[_KEY]._KEY];
-                    if(value === undefined){
-                        value = ' ?????????'
+            if(Object.keys(_props).length){
+                prompt.start();
+                prompt.get(Object.keys(_props), function (err, result){
+                    let writer = fs.createWriteStream("./config/local.properties",{
+                        flags : 'as'
+                    });
+                    writer.write(`\n####### ${group || new Date().toDateString()} ##############`);
+                    let values = {};
+                    for(let _KEY in _props){
+                        let key = _props[_KEY].key;
+                        let value = result[_props[_KEY]._KEY];
+                        if(value === undefined){
+                            value = ' ?????????'
+                        }
+                        writer.write(`\n${key}=${value}`);
+                        values[key] = value;
                     }
-                    writer.write(`\n${key}=${value}`);
-                    values[key] = value;
-                }
-                writer.end();
-                resolve({values : values})
-            });
+                    writer.end();
+                    resolve({values : values})
+                }); 
+            } else {
+                resolve({values : _values})
+            }
+
         });
     }
 }
