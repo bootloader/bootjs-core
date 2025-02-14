@@ -1,4 +1,4 @@
-const context = require('./decorators');
+const decorators = require('./decorators');
 module.exports = {
     decorators
 }
