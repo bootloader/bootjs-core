@@ -1,5 +1,6 @@
 const mappings = {
   controller : [],
+  jobs : [],
   addController(){
     this.controller.push({
       maps : []
@@ -27,7 +28,19 @@ const mappings = {
       ...map,
       ...meta
     }
-  }
+  },
+  addJob(){
+    this.jobs.push({
+      maps : []
+    })
+  },
+  updateJob(meta){
+    let job = this.jobs[this.jobs.length-1]
+    this.jobs[this.jobs.length-1] = {
+      ...job,
+      ...meta
+    }
+  },
 }
 
 function Controller(basePathOption) {
@@ -86,11 +99,23 @@ function AuthRequired(auth) {
   }
 }
 
+function Job(baseJobOptions) {
+  let options = (typeof baseJobOptions == "string" ?  {
+    name : baseJobOptions
+  } : baseJobOptions) || {};
+  mappings.addJob()
+  return function (originalMethod,context) {
+    //console.log(`@Controller:IN ${basePath}`,context)
+    mappings.updateJob({...options, job : originalMethod})
+  };
+}
+
 module.exports = {
   Controller,
   RequestMapping,
   ResponseBody,
   ResponseView,
   AuthRequired,
+  Job,
   mappings
 };
