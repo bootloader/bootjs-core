@@ -30,23 +30,26 @@ const mappings = {
   }
 }
 
-function Controller(basePath) {
+function Controller(basePathOption) {
+  let options = (typeof basePathOption == "string" ?  {
+    path : basePathOption
+  } : basePathOption) || {};
   mappings.addController()
   return function (originalMethod,context) {
     //console.log(`@Controller:IN ${basePath}`,context)
-    mappings.updateController({basePath, controller : originalMethod})
+    mappings.updateController({...options, controller : originalMethod})
   };
 }
 
 
-function RequestMapping({ path, method }) {
+function RequestMapping(requestOptions) {
   return function (originalMethod, context) {
     //console.log(`@RequestMapping:IN ${method}:${path}`,context)
     if (context.kind !== "method" || !context.access) {
       throw new Error("@RequestMapping can only be used on methods!");
     }
     mappings.addHandler(originalMethod)
-    mappings.updateHandler({path,method, handler : originalMethod, name : context.name})
+    mappings.updateHandler({...requestOptions, handler : originalMethod, name : context.name})
   };
 }
 
