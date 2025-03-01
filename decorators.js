@@ -108,11 +108,12 @@ function ResponseView(handler, context) {
   };
 }
 
-function AuthRequired(auth) {
-  //console.log("AuthRequired",auth)
+function AuthRequired(handler, context) {
+  let auth = typeof handler == "function" ? {} : handler;
+  let meta = { auth: auth || {} };
+  ResponseType(handler, context, meta);
   return function (handler, context) {
-    //console.log("AuthRequired:inside",context)
-    mappings.updateHandler(handler, context, { auth: auth || {} });
+    ResponseType(handler, context, meta);
   };
 }
 
