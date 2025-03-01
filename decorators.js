@@ -1,112 +1,132 @@
+let counter = 0;
 const mappings = {
-  controller : [],
-  jobs : [],
-  addController(){
-    this.controller.push({
-      maps : []
-    })
+  controller: [],
+  jobs: [],
+  _controller_: null,
+  addController() {
+    this._controller_ = {
+      maps: [],
+    };
+    this.controller.push(this._controller_);
   },
-  updateController(meta){
-    let controller = this.controller[this.controller.length-1]
-    this.controller[this.controller.length-1] = {
-      ...controller,
-      ...meta
+  updateController(meta) {
+    this._controller_ = this.controller[this.controller.length - 1];
+    this._controller_ = {
+      ...this._controller_,
+      ...meta,
+    };
+    this.controller[this.controller.length - 1] = this._controller_;
+  },
+  addHandler(handler, context) {
+    let map = this._controller_.maps.find((m) => m.handler === handler);
+    if (map) return map;
+
+    if (handler.__index !== undefined) {
+      return this._controller_.maps[handler.__index];
     }
+
+    map = this._controller_.maps.find((m) => m.context.name === context.name);
+    if (map) return map;
+
+    handler.__index = this._controller_.maps.length;
+    context.access.__index = this._controller_.maps.length;
+    map = { context };
+    this._controller_.maps.push(map);
+    return map;
   },
-  addHandler(originalMethod){
-    if(originalMethod.__index){
-        return
-    }
-    originalMethod.__index =  true;
-    let controller = this.controller[this.controller.length-1]
-    controller.maps.push({})
+  updateHandler(handler, context, meta) {
+    let map = this.addHandler(handler, context);
+    Object.assign(map, meta);
   },
-  updateHandler(meta){
-    let controller = this.controller[this.controller.length-1]
-    let map = controller.maps[controller.maps.length-1]
-    controller.maps[controller.maps.length-1] = {
-      ...map,
-      ...meta
-    }
-  },
-  addJob(){
+  addJob() {
     this.jobs.push({
-      maps : []
-    })
+      maps: [],
+    });
   },
-  updateJob(meta){
-    let job = this.jobs[this.jobs.length-1]
-    this.jobs[this.jobs.length-1] = {
+  updateJob(meta) {
+    let job = this.jobs[this.jobs.length - 1];
+    this.jobs[this.jobs.length - 1] = {
       ...job,
-      ...meta
-    }
+      ...meta,
+    };
   },
-}
+};
 
 function Controller(basePathOption) {
-  let options = (typeof basePathOption == "string" ?  {
-    path : basePathOption
-  } : basePathOption) || {};
-  mappings.addController()
-  return function (originalMethod,context) {
+  let options =
+    (typeof basePathOption == "string"
+      ? {
+          path: basePathOption,
+        }
+      : basePathOption) || {};
+  mappings.addController();
+  return function (originalMethod, context) {
     //console.log(`@Controller:IN ${basePath}`,context)
-    mappings.updateController({...options, controller : originalMethod})
+    mappings.updateController({ ...options, controller: originalMethod });
   };
 }
 
-
 function RequestMapping(requestOptions) {
-  return function (originalMethod, context) {
+  return function (handler, context) {
     //console.log(`@RequestMapping:IN ${method}:${path}`,context)
     if (context.kind !== "method" || !context.access) {
       throw new Error("@RequestMapping can only be used on methods!");
     }
-    mappings.addHandler(originalMethod)
-    mappings.updateHandler({...requestOptions, handler : originalMethod, name : context.name})
+    mappings.updateHandler(handler, context, {
+      ...requestOptions,
+      handler,
+      name: context.name,
+    });
   };
 }
 
-function ResponseBody() {
-  let responseType = "json";
-  return function (originalMethod, context) {
-    console.log("context",context)
-    if (context.kind !== "method" || !context.access) {
-      throw new Error("@ResponseBody can only be used on methods!");
-    }
-    mappings.addHandler(originalMethod)
-    mappings.updateHandler({responseType, handler : originalMethod})
-  };
-}
-
-function ResponseView({  }) {
-  let responseType = "view";
-  return function (originalMethod, context) {
-    if (context.kind !== "method" || !context.access) {
-      throw new Error("@ResponseView can only be used on methods!");
-    }
-    mappings.addHandler(originalMethod)
-    mappings.updateHandler({responseType, handler : originalMethod})
-  };
-}
-
-
-function AuthRequired(auth) {
-  //console.log("AuthRequired",auth)
-  return function (originalMethod, context) {
-    //console.log("AuthRequired:inside",context)
-    mappings.addHandler(originalMethod)
-    mappings.updateHandler({auth : auth || {} })
+function ResponseType(handler, context, meta) {
+  if (
+    typeof handler == "function" &&
+    context?.kind == "method" &&
+    context?.access
+  ) {
+    mappings.updateHandler(handler, context, meta);
+  } else if (context && context.kind !== "method") {
+    throw new Error("@ResponseView can only be used on methods!");
   }
 }
 
+function ResponseBody(handler, context) {
+  let meta = { responseType: "json" };
+  ResponseType(handler, context, meta);
+  return function (handler, context) {
+    ResponseType(handler, context, meta);
+  };
+}
+
+function ResponseView(handler, context) {
+  let meta = { responseType: "view" };
+  ResponseType(handler, context, meta);
+  return function (handler, context) {
+    ResponseType(handler, context, meta);
+  };
+}
+
+function AuthRequired(auth) {
+  //console.log("AuthRequired",auth)
+  return function (handler, context) {
+    //console.log("AuthRequired:inside",context)
+    mappings.updateHandler(handler, context, { auth: auth || {} });
+  };
+}
+
 function Job(baseJobOptions) {
-  let options = (typeof baseJobOptions == "string" ?  {
-    name : baseJobOptions
-  } : baseJobOptions) || {};
-  mappings.addJob()
-  return function (originalMethod,context) {
+  let options =
+    (typeof baseJobOptions == "string"
+      ? {
+          name: baseJobOptions,
+        }
+      : baseJobOptions) || {};
+  mappings.addJob();
+  return function (originalMethod, context) {
     //console.log(`@Controller:IN ${basePath}`,context)
-    mappings.updateJob({...options, job : originalMethod})
+    mappings.updateJob({ ...options, job: originalMethod });
   };
 }
 
@@ -117,5 +137,5 @@ module.exports = {
   ResponseView,
   AuthRequired,
   Job,
-  mappings
+  mappings,
 };
