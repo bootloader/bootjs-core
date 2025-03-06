@@ -65,7 +65,7 @@ function Controller(basePathOption) {
       : basePathOption) || {};
   mappings.controller.add();
   return function (handler, context) {
-    console.log(`@Controller:IN ${meta.path}`,handler, context)
+    //console.log(`@Controller:IN ${meta.path}`,handler, context)
     mappings.controller.update(handler,context, meta);
   };
 }
