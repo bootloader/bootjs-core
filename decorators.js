@@ -39,13 +39,20 @@ function DecoMap(){
 
       handler.__index = this._clazz_.maps.length;
       context.access.__index = this._clazz_.maps.length;
-      map = { context, meta : {} };
+      map = { context, meta : { name : context.name}, logs: []};
       this._clazz_.maps.push(map);
       return map;
     },
-    updateHandler(handler, context, meta) {
+    updateHandler(handler, context, meta,log) {
       let map = this.addHandler(handler, context);
-      Object.assign(map.meta, meta);
+      map.meta = Object.assign(map.meta, meta);
+      map.logs = [...map.logs,log]
+      map.meta.handler = map.meta.handler || handler;
+
+      // if(map.meta?.name == "postMessage"){
+      //   console.log("-------------------postMessage==",map.meta?.handler?.toString())
+      // }
+
     },
   }
 }
@@ -78,9 +85,8 @@ function RequestMapping(requestOptions) {
     }
     mappings.controller.updateHandler(handler, context, {
       ...requestOptions,
-      handler,
       name: context.name,
-    });
+    },`RequestMapping:handler ${handler.toString()}`);
   };
 }
 
@@ -90,7 +96,7 @@ function ResponseType(handler, context, meta) {
     context?.kind == "method" &&
     context?.access
   ) {
-    mappings.controller.updateHandler(handler, context, meta);
+    mappings.controller.updateHandler(handler, context, meta,`ResponseType:handler ${handler.name}`);
   } else if (context && context.kind !== "method") {
     throw new Error("@ResponseView can only be used on methods!");
   }
