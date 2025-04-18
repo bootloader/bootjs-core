@@ -24,17 +24,17 @@ function DecoMap() {
       this.clazz[this.clazz.length - 1] = this._clazz_;
     },
     find({ name }) {
-      return this.clazz.find((clazz) => clazz.context.name == name);
+      return this.clazz.find(clazz => clazz.context.name == name);
     },
     addHandler(handler, context) {
-      let map = this._clazz_.maps.find((m) => m.handler === handler);
+      let map = this._clazz_.maps.find(m => m.handler === handler);
       if (map) return map;
 
       if (handler.__index !== undefined) {
         return this._clazz_.maps[handler.__index];
       }
 
-      map = this._clazz_.maps.find((m) => m.context.name === context.name);
+      map = this._clazz_.maps.find(m => m.context.name === context.name);
       if (map) return map;
 
       handler.__index = this._clazz_.maps.length;
@@ -63,7 +63,7 @@ const mappings = {
 
 function Controller(basePathOption) {
   let meta =
-    (typeof basePathOption == "string"
+    (typeof basePathOption == 'string'
       ? {
           path: basePathOption,
         }
@@ -78,7 +78,7 @@ function Controller(basePathOption) {
 function RequestMapping(requestOptions) {
   return function (handler, context) {
     //console.log(`@RequestMapping:IN ${method}:${path}`,context)
-    if (context.kind !== "method" || !context.access) {
+    if (context.kind !== 'method' || !context.access) {
       throw new Error(`@RequestMapping can only be used on methods! found ${context.kind}`);
     }
     mappings.controller.updateHandler(
@@ -93,16 +93,24 @@ function RequestMapping(requestOptions) {
   };
 }
 
+function ControllerMethod(annot, handler, context, meta) {
+  if (typeof handler == 'function' && context?.kind == 'method' && context?.access) {
+    mappings.controller.updateHandler(handler, context, meta, `ControllerMethod:handler ${handler.name}`);
+  } else if (context && context.kind !== 'method') {
+    throw new Error(`@${annot.name} can only be used on methods!`);
+  }
+}
+
 function ResponseType(handler, context, meta) {
-  if (typeof handler == "function" && context?.kind == "method" && context?.access) {
+  if (typeof handler == 'function' && context?.kind == 'method' && context?.access) {
     mappings.controller.updateHandler(handler, context, meta, `ResponseType:handler ${handler.name}`);
-  } else if (context && context.kind !== "method") {
-    throw new Error("@ResponseView can only be used on methods!");
+  } else if (context && context.kind !== 'method') {
+    throw new Error('@ResponseView can only be used on methods!');
   }
 }
 
 function ResponseBody(handler, context) {
-  let meta = { responseType: "json" };
+  let meta = { responseType: 'json' };
   ResponseType(handler, context, meta);
   return function (handler, context) {
     ResponseType(handler, context, meta);
@@ -110,7 +118,7 @@ function ResponseBody(handler, context) {
 }
 
 function ResponseView(handler, context) {
-  let meta = { responseType: "view" };
+  let meta = { responseType: 'view' };
   ResponseType(handler, context, meta);
   return function (handler, context) {
     ResponseType(handler, context, meta);
@@ -118,7 +126,7 @@ function ResponseView(handler, context) {
 }
 
 function AuthRequired(handler, context) {
-  let auth = typeof handler == "function" ? {} : handler;
+  let auth = typeof handler == 'function' ? {} : handler;
   let meta = { auth: auth || {} };
   ResponseType(handler, context, meta);
   return function (handler, context) {
@@ -126,9 +134,18 @@ function AuthRequired(handler, context) {
   };
 }
 
+function OpenAPI(handler, context) {
+  let openapi = typeof handler == 'function' ? {} : handler;
+  let meta = { openapi: openapi || {} };
+  ControllerMethod(OpenAPI, handler, context, meta);
+  return function (handler, context) {
+    ControllerMethod(OpenAPI, handler, context, meta);
+  };
+}
+
 function Job(baseJobOptions) {
   let meta =
-    (typeof baseJobOptions == "string"
+    (typeof baseJobOptions == 'string'
       ? {
           name: baseJobOptions,
         }
@@ -140,13 +157,26 @@ function Job(baseJobOptions) {
   };
 }
 
+Job.EXECUTION_STRATEGY = {
+  CONCURRENT: 'concurrent',
+  SEQUENTIAL: 'sequential',
+  MUTEX: 'mutex',
+};
+
+RequestMapping.METHOD = {
+  POST: 'post',
+  GET: 'get',
+  PUT: 'put',
+  DELETE: 'delete',
+};
+
 function decorate(...classDecorators) {
   return {
     to(targetClass) {
       // Apply class decorators
       for (const decorator of classDecorators.reverse()) {
         decorator(targetClass, {
-          kind: "class",
+          kind: 'class',
           name: targetClass.name,
         });
       }
@@ -157,10 +187,10 @@ function decorate(...classDecorators) {
           const methodName = methodFn.name;
 
           const context = {
-            kind: "method",
+            kind: 'method',
             name: methodName,
             static: false,
-            access: { type: "public" },
+            access: { type: 'public' },
             addInitializer: () => {},
           };
 
@@ -183,6 +213,7 @@ module.exports = {
   ResponseBody,
   ResponseView,
   AuthRequired,
+  OpenAPI,
   Job,
   mappings,
   decorate,
