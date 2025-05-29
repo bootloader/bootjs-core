@@ -61,17 +61,27 @@ const mappings = {
   jobs: new DecoMap(),
 };
 
-function Controller(basePathOption) {
+function ControllerClass(annot, handler, context, meta) {
+  if (typeof handler == 'function' && context?.kind == 'class') {
+    mappings.controller.update(handler, context, meta);
+  } else if (context && context.kind !== 'class') {
+    throw new Error(`@${annot.name} can only be used on methods!`);
+  }
+}
+
+function Controller(handler, context) {
   let meta =
-    (typeof basePathOption == 'string'
+    (typeof handler == 'string'
       ? {
-          path: basePathOption,
+          path: handler,
         }
-      : basePathOption) || {};
+      : handler) || {};
   mappings.controller.add();
+  ControllerClass(Controller, handler, context, meta);
   return function (handler, context) {
     //console.log(`@Controller:IN ${meta.path}`,handler, context)
-    mappings.controller.update(handler, context, meta);
+    //mappings.controller.update(handler, context, meta);
+     ControllerClass(Controller, handler, context, meta);
   };
 }
 
