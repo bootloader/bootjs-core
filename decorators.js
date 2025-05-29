@@ -75,7 +75,7 @@ function Controller(handler, context) {
       ? {
           path: handler,
         }
-      : handler) || {};
+      : handler) || { path : ""};
   mappings.controller.add();
   ControllerClass(Controller, handler, context, meta);
   return function (handler, context) {
